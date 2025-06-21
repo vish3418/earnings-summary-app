@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Earnings Summary - Live Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .api-status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .api-connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .api-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .ticker-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .ticker-tag {
+            background: #f0f0f0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ticker-tag .remove {
+            cursor: pointer;
+            color: #999;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        
+        .ticker-tag .remove:hover {
+            color: #ff4444;
+        }
+        
+        .results-section {
+            margin-top: 30px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-left: 10px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .earnings-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .earnings-card:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .earnings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .company-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .ticker-symbol {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .price-info {
+            text-align: right;
+        }
+        
+        .current-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .price-change {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .positive {
+            color: #4caf50;
+        }
+        
+        .negative {
+            color: #ff5252;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .ai-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .error-card {
+            background: #ffebee;
+            border: 1px solid #ffcdd2;
+            color: #c62828;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .config-section {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .config-section h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .config-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #90caf9;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Portfolio Earnings Summary</h1>
+        <p class="subtitle">Real-time earnings reports with AI-powered insights</p>
+        
+        <div id="apiStatus" class="api-status api-disconnected">
+            Checking API connection...
+        </div>
+        
+        <div class="config-section">
+            <h3>API Configuration</h3>
+            <input type="text" id="apiUrl" class="config-input" placeholder="API URL (default: http://localhost:3001)" value="http://localhost:3001">
+            <button class="btn" onclick="testConnection()">Test Connection</button>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="tickerInput" 
+                    placeholder="Enter stock ticker (e.g., AAPL, GOOGL, MSFT)"
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="btn" onclick="addTicker()">Add Stock</button>
+            </div>
+            
+            <div id="tickerList" class="ticker-list"></div>
+            
+            <button class="btn" onclick="fetchEarnings()" id="fetchBtn" style="display: none;">
+                Get Live Earnings Reports
+            </button>
+        </div>
+        
+        <div id="results" class="results-section"></div>
+    </div>
+
+    <script>
+        let tickers = [];
+        let apiUrl = 'http://localhost:3001';
+        
+        // Check API connection on load
+        window.onload = async () => {
+            apiUrl = document.getElementById('apiUrl').value || 'http://localhost:3001';
+            await testConnection();
+        };
+        
+        async function testConnection() {
+            const statusEl = document.getElementById('apiStatus');
+            apiUrl = document.getElementById('apiUrl').value || 'http://localhost:3001';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/health`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusEl.className = 'api-status api-connected';
+                    statusEl.textContent = '✅ API Connected - Ready for live data';
+                } else {
+                    throw new Error('API health check failed');
+                }
+            } catch (error) {
+                statusEl.className = 'api-status api-disconnected';
+                statusEl.textContent = '❌ API Not Connected - Please check your backend server';
+                console.error('API connection error:', error);
+            }
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addTicker();
+            }
+        }
+        
+        function addTicker() {
+            const input = document.getElementById('tickerInput');
+            const ticker = input.value.trim().toUpperCase();
+            
+            if (ticker && !tickers.includes(ticker)) {
+                tickers.push(ticker);
+                input.value = '';
+                updateTickerList();
+                document.getElementById('fetchBtn').style.display = 'block';
+            }
+        }
+        
+        function removeTicker(ticker) {
+            tickers = tickers.filter(t => t !== ticker);
+            updateTickerList();
+            if (tickers.length === 0) {
+                document.getElementById('fetchBtn').style.display = 'none';
+                document.getElementById('results').innerHTML = '';
+            }
+        }
+        
+        function updateTickerList() {
+            const listEl = document.getElementById('tickerList');
+            listEl.innerHTML = tickers.map(ticker => `
+                <div class="ticker-tag">
+                    ${ticker}
+                    <span class="remove" onclick="removeTicker('${ticker}')">×</span>
+                </div>
+            `).join('');
+        }
+        
+        async function fetchEarnings() {
+            const resultsEl = document.getElementById('results');
+            const fetchBtn = document.getElementById('fetchBtn');
+            
+            fetchBtn.disabled = true;
+            resultsEl.innerHTML = '<div class="loading">Fetching live earnings data and generating AI summaries...</div>';
+            
+            try {
+                const response = await fetch(`${apiUrl}/api/earnings/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ symbols: tickers })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    throw new Error(data.error || 'Failed to fetch data');
+                }
+            } catch (error) {
+                console.error('Error fetching earnings:', error);
+                resultsEl.innerHTML = `
+                    <div class="error">
+                        <strong>Error:</strong> ${error.message}<br>
+                        Please make sure your backend server is running and API keys are configured.
+                    </div>
+                `;
+            } finally {
+                fetchBtn.disabled = false;
+            }
+        }
+        
+        function displayResults(results) {
+            const resultsEl = document.getElementById('results');
+            
+            resultsEl.innerHTML = results.map(result => {
+                if (!result.success) {
+                    return `
+                        <div class="error-card">
+                            <strong>${result.symbol}</strong><br>
+                            Error: ${result.error}
+                        </div>
+                    `;
+                }
+                
+                const { stock, earnings, summary } = result.data;
+                const latestEPS = earnings.latestEarnings;
+                const overview = earnings.overview;
+                
+                return `
+                    <div class="earnings-card">
+                        <div class="earnings-header">
+                            <div class="company-info">
+                                <h3>${stock.name}</h3>
+                                <span class="ticker-symbol">${stock.symbol}</span>
+                            </div>
+                            <div class="price-info">
+                                <div class="current-price">$${stock.price.toFixed(2)}</div>
+                                <div class="price-change ${stock.change >= 0 ? 'positive' : 'negative'}">
+                                    ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)} (${stock.change >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-grid">
+                            <div class="metric">
+                                <div class="metric-label">Reported EPS</div>
+                                <div class="metric-value">$${latestEPS.reportedEPS || 'N/A'}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Est. EPS</div>
+                                <div class="metric-value">$${latestEPS.estimatedEPS || 'N/A'}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Surprise</div>
+                                <div class="metric-value ${latestEPS.surprise >= 0 ? 'positive' : 'negative'}">
+                                    ${latestEPS.surprisePercentage || 'N/A'}%
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Revenue (TTM)</div>
+                                <div class="metric-value">
+                                    ${overview.revenue ? '$' + (overview.revenue / 1000000000).toFixed(2) + 'B' : 'N/A'}
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">P/E Ratio</div>
+                                <div class="metric-value">${overview.peRatio || 'N/A'}</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Profit Margin</div>
+                                <div class="metric-value">
+                                    ${overview.profitMargin ? (parseFloat(overview.profitMargin) * 100).toFixed(1) + '%' : 'N/A'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="summary">
+                            <span class="ai-badge">AI Summary</span>
+                            ${summary}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
