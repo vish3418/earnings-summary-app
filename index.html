@@ -288,22 +288,25 @@
         margin-bottom: 20px;
       }
 
-      .footer {
-        text-align: center;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #e0e0e0;
-        color: #666;
-        font-size: 14px;
+      .config-section {
+        background: #e3f2fd;
+        border: 1px solid #90caf9;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
       }
 
-      .footer a {
-        color: #667eea;
-        text-decoration: none;
+      .config-section h3 {
+        color: #1976d2;
+        margin-bottom: 10px;
       }
 
-      .footer a:hover {
-        text-decoration: underline;
+      .config-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #90caf9;
+        border-radius: 5px;
+        margin-bottom: 10px;
       }
     </style>
   </head>
@@ -315,7 +318,19 @@
       </p>
 
       <div id="apiStatus" class="api-status api-disconnected">
-        Connecting to API...
+        Checking API connection...
+      </div>
+
+      <div class="config-section">
+        <h3>API Configuration</h3>
+        <input
+          type="text"
+          id="apiUrl"
+          class="config-input"
+          placeholder="API URL (default: https://earnings-summary-app.onrender.com)"
+          value="https://earnings-summary-app.onrender.com"
+        />
+        <button class="btn" onclick="testConnection()">Test Connection</button>
       </div>
 
       <div class="input-section">
@@ -342,41 +357,28 @@
       </div>
 
       <div id="results" class="results-section"></div>
-
-      <div class="footer">
-        <p>Built with using real-time financial data and AI</p>
-        <p>
-          <a
-            href="https://github.com/vish3418/earnings-summary-app"
-            target="_blank"
-            >View on GitHub</a
-          >
-        </p>
-      </div>
     </div>
 
     <script>
       let tickers = [];
-      // REPLACE WITH YOUR RENDER URL
-      const API_URL = "https://earnings-summary-app.onrender.com";
-      // For local development, use: 'http://localhost:3001'
+      let apiUrl = "https://earnings-summary-app.onrender.com";
 
       // Check API connection on load
       window.onload = async () => {
+        apiUrl =
+          document.getElementById("apiUrl").value ||
+          "https://earnings-summary-app.onrender.com";
         await testConnection();
-        // Add some example tickers
-        ["AAPL", "MSFT", "GOOGL"].forEach(ticker => {
-          tickers.push(ticker);
-        });
-        updateTickerList();
-        document.getElementById("fetchBtn").style.display = "block";
       };
 
       async function testConnection() {
         const statusEl = document.getElementById("apiStatus");
+        apiUrl =
+          document.getElementById("apiUrl").value ||
+          "https://earnings-summary-app.onrender.com";
 
         try {
-          const response = await fetch(`${API_URL}/api/health`);
+          const response = await fetch(`${apiUrl}/api/health`);
           const data = await response.json();
 
           if (data.success) {
@@ -388,7 +390,7 @@
         } catch (error) {
           statusEl.className = "api-status api-disconnected";
           statusEl.textContent =
-            "❌ API Connection Failed - Please try again later";
+            "❌ API Not Connected - Please check your backend server";
           console.error("API connection error:", error);
         }
       }
@@ -443,7 +445,7 @@
           '<div class="loading">Fetching live earnings data and generating AI summaries...</div>';
 
         try {
-          const response = await fetch(`${API_URL}/api/earnings/batch`, {
+          const response = await fetch(`${apiUrl}/api/earnings/batch`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
@@ -462,7 +464,8 @@
           console.error("Error fetching earnings:", error);
           resultsEl.innerHTML = `
                     <div class="error">
-                        <strong>Error:</strong> Unable to fetch earnings data. Please try again later.
+                        <strong>Error:</strong> ${error.message}<br>
+                        Please make sure your backend server is running and API keys are configured.
                     </div>
                 `;
         } finally {
@@ -479,7 +482,7 @@
               return `
                         <div class="error-card">
                             <strong>${result.symbol}</strong><br>
-                            Error: Unable to fetch data for this symbol
+                            Error: ${result.error}
                         </div>
                     `;
             }
